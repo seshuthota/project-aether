@@ -81,17 +81,21 @@ export default function AetherFlow() {
                         transition={{ duration: 0.8 }}
                         className="flex flex-col items-center gap-8 z-10"
                     >
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 max-w-lg text-center">
                             <span className="text-xs uppercase tracking-[0.3em] text-neutral-500 animate-pulse">Aether Link Established</span>
                             <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white/20 select-none">
                                 [LOCKED]
                             </h1>
+                            <p className="text-[10px] md:text-xs text-neutral-400 mt-4 leading-relaxed font-sans max-w-md">
+                                PROJECT AETHER is a <strong className="text-white">Temporal Perception Protocol</strong>.
+                                Target data is generated <em>after</em> your session to test non-local causality.
+                            </p>
                         </div>
 
-                        <div className="flex flex-col gap-2 w-full max-w-xs">
+                        <div className="flex flex-col gap-2 w-full max-w-xs items-center">
                             <input
                                 type="password"
-                                placeholder="ENTER OPENROUTER API KEY"
+                                placeholder="OPENROUTER API KEY"
                                 value={apiKey}
                                 onChange={(e) => {
                                     setApiKey(e.target.value);
@@ -99,6 +103,9 @@ export default function AetherFlow() {
                                 }}
                                 className="w-full bg-neutral-900 border border-neutral-800 p-3 text-xs text-center text-neutral-300 focus:outline-none focus:border-neutral-500 tracking-widest transition-colors placeholder:text-neutral-700 font-mono"
                             />
+                            <p className="text-[9px] text-neutral-600 uppercase tracking-wider">
+                                Required: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white underline underline-offset-2 transition-colors">Key from OpenRouter.ai</a>
+                            </p>
                         </div>
 
                         <button
