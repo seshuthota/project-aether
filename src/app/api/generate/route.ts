@@ -1,28 +1,36 @@
 import { NextResponse } from "next/server";
 import { MODEL_CONFIG } from "@/config/models";
-import { generatePromptFromHash } from "@/lib/entropy";
+import { simpleHash, generatePromptFromSeed, generateFinalSeed, ProtocolType } from "@/lib/entropy";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { sketch, description, coordinate, apiKey: userApiKey } = body;
+        const { sketch, description, coordinate, apiKey: userApiKey, protocol } = body;
+
+        const currentProtocol = protocol || 'PRECOGNITION'; // Default to Paradox
 
         // Sketch is now OPTIONAL. Coordinate is required.
         if (!coordinate) {
             return NextResponse.json({ error: "Missing coordinate" }, { status: 400 });
         }
 
-        // 1. timestamp hash
-        const timestamp = Date.now();
-        // We only include description in hash, not sketch, to keep it consistent 
-        // or we can include sketch if present. 
-        // Let's include what we have.
-        const sessionString = `${coordinate}-${description}-${timestamp}`;
-        const hash = crypto.createHash('sha256').update(sessionString).digest('hex');
+        // 1. Determine Seed based on Protocol
+        let seed: number;
+        if (currentProtocol === 'REMOTE_VIEWING') {
+            // Anchor Mode: Deterministic hash of coordinate
+            // The target was "locked" when the coordinate was generated.
+            seed = simpleHash(coordinate);
+            console.log(`[ANCHOR MODE] Target Locked for ${coordinate}. Seed: ${seed}`);
+        } else {
+            // Paradox Mode: New random seed NOW.
+            // The target is being generated AFTER the observation.
+            seed = generateFinalSeed();
+            console.log(`[PARADOX MODE] Wave Function Collapsing NOW. Seed: ${seed}`);
+        }
 
         // 2. Generate Prompt (The Entropy Engine)
-        const prompt = generatePromptFromHash(hash);
+        const prompt = generatePromptFromSeed(seed);
         console.log("Generated Target Prompt:", prompt);
 
         const apiKey = userApiKey || process.env.OPENROUTER_API_KEY;
@@ -144,10 +152,11 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({
-            hash,
             prompt,
             targetUrl: targetImageUrl,
-            analysis: analysisText
+            analysis: analysisText,
+            protocol: currentProtocol,
+            seed: seed
         });
 
     } catch (error) {

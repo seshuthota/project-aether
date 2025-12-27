@@ -5,9 +5,10 @@ import { generateCoordinate } from "@/lib/entropy";
 import { cn } from "@/lib/utils";
 import { saveKey, loadKey } from "@/lib/security";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, X, FileImage } from "lucide-react";
+import { Upload, X, FileImage, Info, Lock, Zap } from "lucide-react";
 
 type Phase = "void" | "viewing" | "manifestation" | "debrief";
+type Protocol = "PRECOGNITION" | "REMOTE_VIEWING";
 
 export default function AetherFlow() {
     const [phase, setPhase] = useState<Phase>("void");
@@ -15,8 +16,10 @@ export default function AetherFlow() {
     const [isMounted, setIsMounted] = useState(false);
     const [description, setDescription] = useState("");
     const [sketchUrl, setSketchUrl] = useState<string | null>(null);
-    const [result, setResult] = useState<{ targetUrl: string; analysis: string; prompt: string } | null>(null);
+    const [result, setResult] = useState<{ targetUrl: string; analysis: string; prompt: string; protocol: Protocol; seed: number } | null>(null);
     const [apiKey, setApiKey] = useState("");
+    const [protocol, setProtocol] = useState<Protocol>("PRECOGNITION");
+    const [showInfo, setShowInfo] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +54,7 @@ export default function AetherFlow() {
             // We pass the raw key to the API (over SSL/TLS)
             const res = await fetch("/api/generate", {
                 method: "POST",
-                body: JSON.stringify({ sketch: sketchUrl, description, coordinate, apiKey }),
+                body: JSON.stringify({ sketch: sketchUrl, description, coordinate, apiKey, protocol }),
             });
             const data = await res.json();
 
@@ -71,6 +74,62 @@ export default function AetherFlow() {
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-100 font-mono flex flex-col items-center justify-center overflow-hidden relative selection:bg-neutral-700 selection:text-white">
 
+            {/* INFO MODAL */}
+            <AnimatePresence>
+                {showInfo && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                        onClick={() => setShowInfo(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-neutral-900 border border-neutral-800 max-w-2xl w-full p-8 rounded-sm shadow-2xl relative"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button onClick={() => setShowInfo(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white"><X size={20} /></button>
+                            <h2 className="text-2xl font-bold mb-6 tracking-tight text-white">Protocol Definitions</h2>
+
+                            <div className="space-y-6">
+                                <div className="p-4 border border-emerald-900/30 bg-emerald-950/10 rounded-sm">
+                                    <h3 className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-widest text-xs mb-2">
+                                        <Lock size={14} /> Anchor Mode (Remote Viewing)
+                                    </h3>
+                                    <p className="text-sm text-neutral-400 leading-relaxed">
+                                        The target is <strong>deterministically locked</strong> at the moment the coordinate is generated (T-0).
+                                        The image already "exists" mathematically before you start your session.
+                                        <br /><span className="text-emerald-500/50 text-xs mt-2 block">Goal: Perceive information that is already fixed in spacetime.</span>
+                                    </p>
+                                </div>
+
+                                <div className="p-4 border border-violet-900/30 bg-violet-950/10 rounded-sm">
+                                    <h3 className="flex items-center gap-2 text-violet-400 font-bold uppercase tracking-widest text-xs mb-2">
+                                        <Zap size={14} /> Paradox Mode (Precognition)
+                                    </h3>
+                                    <p className="text-sm text-neutral-400 leading-relaxed">
+                                        The target is <strong>generated randomly</strong> only AFTER you submit your session (T+1).
+                                        The image does not exist when you are drawing it.
+                                        <br /><span className="text-violet-500/50 text-xs mt-2 block">Goal: Perceive information from a future timeline that hasn't happened yet.</span>
+                                    </p>
+                                </div>
+
+                                <div className="p-4 border border-neutral-800 bg-neutral-900/50 rounded-sm mt-6">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Simulated Reality</h3>
+                                    <p className="text-xs text-neutral-500 leading-relaxed">
+                                        <strong>Note:</strong> In both protocols, the "Target" is a simulated construct generated by Artificial Intelligence.
+                                        It does not exist in the physical world. The experiment tests your ability to perceive <em>information causing the simulation</em>, not a physical location.
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <AnimatePresence mode="wait">
                 {phase === "void" && (
                     <motion.div
@@ -86,10 +145,36 @@ export default function AetherFlow() {
                             <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white/20 select-none">
                                 [LOCKED]
                             </h1>
-                            <p className="text-[10px] md:text-xs text-neutral-400 mt-4 leading-relaxed font-sans max-w-md">
-                                PROJECT AETHER is a <strong className="text-white">Temporal Perception Protocol</strong>.
-                                Target data is generated <em>after</em> your session to test non-local causality.
-                            </p>
+                            <div className="flex items-center gap-2 mt-4 justify-center">
+                                <p className="text-[10px] md:text-xs text-neutral-400 font-sans">
+                                    PROJECT AETHER: <strong className="text-white">Temporal Perception Protocol</strong>
+                                </p>
+                                <button onClick={() => setShowInfo(true)} className="text-neutral-500 hover:text-white transition-colors">
+                                    <Info size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* PROTOCOL TOGGLE */}
+                        <div className="flex items-center bg-neutral-900/50 border border-neutral-800 p-1 rounded-full">
+                            <button
+                                onClick={() => setProtocol("PRECOGNITION")}
+                                className={cn(
+                                    "px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all",
+                                    protocol === "PRECOGNITION" ? "bg-violet-900/30 text-violet-200 shadow-[0_0_10px_rgba(139,92,246,0.3)]" : "text-neutral-500 hover:text-neutral-300"
+                                )}
+                            >
+                                Paradox Mode
+                            </button>
+                            <button
+                                onClick={() => setProtocol("REMOTE_VIEWING")}
+                                className={cn(
+                                    "px-4 py-2 rounded-full text-[10px] uppercase tracking-wider transition-all",
+                                    protocol === "REMOTE_VIEWING" ? "bg-emerald-900/30 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "text-neutral-500 hover:text-neutral-300"
+                                )}
+                            >
+                                Anchor Mode
+                            </button>
                         </div>
 
                         <div className="flex flex-col gap-2 w-full max-w-xs items-center">
@@ -249,7 +334,12 @@ export default function AetherFlow() {
 
                             {/* Reality */}
                             <div className="flex-1 flex flex-col gap-2">
-                                <span className="text-xs uppercase tracking-widest text-neutral-500">Objective Reality</span>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-xs uppercase tracking-widest text-neutral-500">Objective Reality</span>
+                                    <span className={cn("text-[9px] uppercase tracking-wider px-2 py-1 rounded bg-neutral-800", result.protocol === "PRECOGNITION" ? "text-violet-400" : "text-emerald-400")}>
+                                        {result.protocol === "PRECOGNITION" ? "Paradox" : "Anchor"}
+                                    </span>
+                                </div>
                                 <div className="flex-1 bg-neutral-900 border border-neutral-800 rounded-sm overflow-hidden relative">
                                     <img src={result.targetUrl} alt="Target Reality" className="absolute inset-0 w-full h-full object-cover" />
                                 </div>
